@@ -1,0 +1,13 @@
+{
+	"required": true,
+	"package": "com.relapzz.vulkanfixes.bench.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"MinecraftClientMixin",
+		"ProfilerNodeMixin",
+		"RendererMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

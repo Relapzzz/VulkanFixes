@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"id": "vulkanfixes_bench",
+	"version": "${version}",
+	"name": "VulkanFixes Bench",
+	"description": "Dev-only harness that replays fixed scenes and logs frame times.",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.relapzz.vulkanfixes.bench.BenchClient"
+		]
+	},
+	"mixins": [
+		"vulkanfixes_bench.mixins.json"
+	],
+	"depends": {
+		"fabricloader": "*",
+		"fabric-api": "*",
+		"vulkanmod": "*"
+	}
+}

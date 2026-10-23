@@ -1,0 +1,55 @@
+name: Build
+
+# Every push and pull request is built. Pushing a tag like v1.2.3 also publishes
+# a GitHub release with the jar, after checking the tag matches gradle.properties.
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew build --no-daemon
+
+      - name: Read mod version
+        id: version
+        run: echo "version=$(grep '^version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vulkanfixes-${{ steps.version.outputs.version }}
+          path: build/libs/vulkanfixes-${{ steps.version.outputs.version }}.jar
+
+      - name: Check tag matches version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [ "${GITHUB_REF_NAME#v}" != "${{ steps.version.outputs.version }}" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match version=${{ steps.version.outputs.version }} in gradle.properties"
+            exit 1
+          fi
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VulkanFixes ${{ steps.version.outputs.version }}
+          files: build/libs/vulkanfixes-${{ steps.version.outputs.version }}.jar
+          generate_release_notes: true

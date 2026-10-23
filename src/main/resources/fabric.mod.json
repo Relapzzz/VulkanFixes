@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "vulkanfixes",
+	"version": "${version}",
+	"name": "VulkanFixes",
+	"description": "Fixes the frame drops VulkanMod shows when turning toward a sunrise or sunset in fullscreen, without changing how the game looks.",
+	"authors": [
+		"relapzz"
+	],
+	"contact": {
+		"homepage": "https://github.com/Relapzzz/VulkanFixes",
+		"sources": "https://github.com/Relapzzz/VulkanFixes",
+		"issues": "https://github.com/Relapzzz/VulkanFixes/issues"
+	},
+	"license": "CC0-1.0",
+	"environment": "client",
+	"mixins": [
+		"vulkanfixes.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"vulkanmod": "0.6.8+1.21.11"
+	}
+}
