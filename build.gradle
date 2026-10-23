@@ -38,7 +38,8 @@ subprojects {
 	}
 
 	tasks.withType(ProcessResources).configureEach {
-		def props = [version: project.version, minecraft_range: project.minecraft_range]
+		// entrypoints is only set by subprojects that have a Mod Menu config screen.
+		def props = [version: project.version, minecraft_range: project.minecraft_range, entrypoints: project.findProperty('entrypoints') ?: '{}']
 		inputs.properties props
 
 		filesMatching('fabric.mod.json') {

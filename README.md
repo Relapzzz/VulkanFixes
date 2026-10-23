@@ -36,6 +36,24 @@ VulkanFixes clears with a color that only follows the fog after the fog has stay
 
 Start the game with `-Dvulkanfixes.fogClear=false` to turn the fix off for comparison.
 
+## Motion blur (experimental, 1.21.11 only)
+
+An optional camera motion blur that works under VulkanMod. It's off by default. Turn it on in [Mod Menu](https://modrinth.com/mod/modmenu) → VulkanFixes → **Motion Blur (Experimental)**. The setting is saved in `config/vulkanfixes.json`. Mod Menu is optional; without it, edit that file.
+
+- Only turning the camera blurs. Walking doesn't, and the hand, held item and HUD always stay sharp.
+- No frames are held back, so it adds no input latency.
+- **Blur Strength** (0.1 to 2, default 1): at 1 each frame is smeared across the camera motion of half a monitor refresh, like a film camera's shutter. The streak length doesn't depend on fps.
+- It costs nothing while the camera is still or turning slowly. While turning, each frame takes about 0.6 to 0.85 ms longer:
+
+| 1080p fullscreen, Iris Xe, MC 1.21.11 | Blur off | Blur on |
+|---|---|---|
+| Standing still | 483 fps | 467 fps |
+| Slow sweep | 501 fps | 375–389 fps |
+| Fast spin (270°/s) | 406 fps | 307–321 fps |
+| Turning across the sunset | 372 fps | 272–306 fps |
+
+How it works: after the world is drawn, [`MotionBlur`](versions/1.21.11/src/main/java/com/relapzz/vulkanfixes/MotionBlur.java) works out from last frame's camera rotation where each pixel was on screen, and [`motion_blur.fsh`](versions/1.21.11/src/main/resources/assets/vulkanfixes/shaders/core/motion_blur.fsh) averages along that line at half resolution. [`motion_blur_composite.fsh`](versions/1.21.11/src/main/resources/assets/vulkanfixes/shaders/core/motion_blur_composite.fsh) then blends the result over the sharp frame wherever pixels moved at least a pixel. Under VulkanMod the world is drawn straight into the swapchain image, which can't be read and drawn into in the same pass, hence the two passes.
+
 ## Project layout
 
 Minecraft's rendering API changed several times during 1.21, so each range of versions has its own small subproject in `versions/`, named after the Minecraft version it compiles against:
@@ -119,6 +137,8 @@ Every jar in 1.1.0 passed this check for each Minecraft version in its range.
 - `-PbenchFullscreen` uses exclusive fullscreen, which is the only mode where the sunset stall shows up.
 - `-PbenchRealistic` plays in creative with F3 open. Without it the bench uses a bare spectator camera.
 - `-PbenchNoFix` turns the fix off. `-PbenchAlwaysFill` forces the fill draw on every frame for screenshot comparisons.
+- `-PbenchMotionShotMs=1300` also takes a screenshot that long into each scene's measurement, while the camera moves, to look at motion blur. It stalls one frame, so leave it off when the numbers matter. Motion blur follows `run/config/vulkanfixes.json`.
+- Put [Mod Menu](https://modrinth.com/mod/modmenu) in `run/mods` to open the config screen in dev runs.
 - `-PbenchJvm="-XX:+UseZGC -XX:+ZGenerational"`, `-PbenchXmx=3072M` and `-PbenchJfr` set JVM flags, heap size, and a JFR recording.
 
 ## License

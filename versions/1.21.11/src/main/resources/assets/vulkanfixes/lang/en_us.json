@@ -1,0 +1,6 @@
+{
+	"vulkanfixes.config.title": "VulkanFixes",
+	"vulkanfixes.config.motionBlur": "Motion Blur (Experimental)",
+	"vulkanfixes.config.motionBlur.tooltip": "Blurs the world along the camera's movement so turning looks smoother. Doesn't delay frames, and the hand and HUD stay sharp.",
+	"vulkanfixes.config.motionBlurStrength": "Blur Strength: %s"
+}

@@ -37,6 +37,7 @@ loom {
 			property 'vulkanfixes.bench.realistic', project.hasProperty('benchRealistic').toString()
 			property 'vulkanfixes.bench.f3', (project.hasProperty('benchRealistic') && !project.hasProperty('benchNoF3')).toString()
 			property 'vulkanfixes.bench.fullscreen', project.hasProperty('benchFullscreen').toString()
+			property 'vulkanfixes.bench.motionShotMs', (project.findProperty('benchMotionShotMs') ?: '0').toString()
 			// Turns the fog clear fix off, to measure against vanilla behavior.
 			property 'vulkanfixes.fogClear', (!project.hasProperty('benchNoFix')).toString()
 			if (project.hasProperty('benchAlwaysFill')) {
@@ -63,6 +64,9 @@ dependencies {
 	runtimeOnly "org.lwjgl:lwjgl-vma:3.3.3:${lwjglNatives}"
 	runtimeOnly "org.lwjgl:lwjgl-shaderc:3.3.3"
 	runtimeOnly "org.lwjgl:lwjgl-shaderc:3.3.3:${lwjglNatives}"
+
+	// Optional: the config screen registers with Mod Menu when it's installed. For dev runs, put Mod Menu in run/mods.
+	modCompileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
 
 	// Only the bench harness uses Fabric API; the mod itself does not depend on it.
 	modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"

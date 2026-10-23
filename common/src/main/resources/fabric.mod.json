@@ -14,6 +14,7 @@
 	},
 	"license": "CC0-1.0",
 	"environment": "client",
+	"entrypoints": ${entrypoints},
 	"mixins": [
 		"vulkanfixes.mixins.json"
 	],

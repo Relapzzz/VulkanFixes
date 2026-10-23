@@ -48,6 +48,9 @@ public final class BenchClient implements ClientModInitializer {
 	private static final boolean F3 = Boolean.parseBoolean(System.getProperty("vulkanfixes.bench.f3", String.valueOf(REALISTIC)));
 	// The sunset stall only shows in exclusive fullscreen, where the swapchain image is flipped straight to the display.
 	private static final boolean FULLSCREEN = Boolean.getBoolean("vulkanfixes.bench.fullscreen");
+	// Also takes a screenshot this long into measuring, while the camera moves, e.g. to look at motion blur.
+	// The screenshot stalls one frame, so leave it off when the numbers matter.
+	private static final long MOTION_SHOT_NS = Long.getLong("vulkanfixes.bench.motionShotMs", 0) * 1_000_000L;
 
 	// Positions and angles in the original test world; 12522 is the sun on the horizon.
 	private static final String SUNSET_SPOT = "-277.456 72 42.426";
@@ -79,6 +82,7 @@ public final class BenchClient implements ClientModInitializer {
 	private static long phaseStartNs;
 	private static long lastFrameNs;
 	private static SlowFrameEvent frameEvent;
+	private static boolean motionShotTaken;
 	private static int sceneIndex = -1;
 	private static float baseYaw;
 	private static float basePitch;
@@ -133,11 +137,17 @@ public final class BenchClient implements ClientModInitializer {
 				// This frame's duration contains the screenshot readback stall, so measuring starts after it.
 				enter(Phase.MEASURE, now);
 				STATS.begin(now);
+				motionShotTaken = false;
 				hold(client, now);
 			}
 			case MEASURE -> {
 				STATS.record(frameNs, now);
 				hold(client, now);
+				if (MOTION_SHOT_NS > 0 && !motionShotTaken && now - phaseStartNs > MOTION_SHOT_NS) {
+					motionShotTaken = true;
+					ScreenshotRecorder.saveScreenshot(client.runDirectory, "bench-" + LABEL + "-" + scene().name + "-motion.png", client.getFramebuffer(), 1, text -> {
+					});
+				}
 				if (now - phaseStartNs > MEASURE_NS) {
 					String line = String.format("%-18s %s", scene().name, STATS.summary());
 					LOGGER.info("[bench:{}] {}", LABEL, line);
