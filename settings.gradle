@@ -10,3 +10,10 @@ pluginManagement {
 }
 
 rootProject.name = 'vulkanfixes'
+
+// One subproject per range of Minecraft versions that share a rendering API.
+// Each folder in versions/ is named after the Minecraft version it compiles against.
+file('versions').eachDir { dir ->
+	include dir.name
+	project(":${dir.name}").projectDir = dir
+}

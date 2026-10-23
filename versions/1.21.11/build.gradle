@@ -1,0 +1,70 @@
+// Native libraries for dev runs only; the release jar contains none.
+def osName = System.getProperty('os.name').toLowerCase()
+def lwjglNatives = osName.contains('win') ? 'natives-windows'
+	: osName.contains('mac') ? (System.getProperty('os.arch') == 'aarch64' ? 'natives-macos-arm64' : 'natives-macos')
+	: 'natives-linux'
+
+// The bench source set is a dev-only mod that drives the client through fixed
+// scenes and logs frame times. It never ships in the release jar.
+sourceSets {
+	bench {
+		compileClasspath += main.compileClasspath + main.output
+		runtimeClasspath += main.runtimeClasspath + main.output
+	}
+}
+
+loom {
+	mods {
+		vulkanfixes {
+			sourceSet sourceSets.main
+		}
+		vulkanfixes_bench {
+			sourceSet sourceSets.bench
+		}
+	}
+
+	runs {
+		bench {
+			client()
+			name = 'Benchmark Client'
+			source sourceSets.bench
+			runDir = '../../run'
+			programArgs '--quickPlaySingleplayer', 'bench', '--width', '1920', '--height', '1080'
+			// e.g. gradlew :1.21.11:runBench -PbenchLabel=baseline -PbenchScenes=sunset_west,sunset_east -PbenchJfr
+			property 'vulkanfixes.bench.label', (project.findProperty('benchLabel') ?: 'run').toString()
+			property 'vulkanfixes.bench.scenes', (project.findProperty('benchScenes') ?: '').toString()
+			property 'vulkanfixes.bench.tickRate', (project.findProperty('benchTickRate') ?: '20').toString()
+			property 'vulkanfixes.bench.realistic', project.hasProperty('benchRealistic').toString()
+			property 'vulkanfixes.bench.f3', (project.hasProperty('benchRealistic') && !project.hasProperty('benchNoF3')).toString()
+			property 'vulkanfixes.bench.fullscreen', project.hasProperty('benchFullscreen').toString()
+			// Turns the fog clear fix off, to measure against vanilla behavior.
+			property 'vulkanfixes.fogClear', (!project.hasProperty('benchNoFix')).toString()
+			if (project.hasProperty('benchAlwaysFill')) {
+				property 'vulkanfixes.fogClear.settleFrames', '2147483647'
+			}
+			// Same as the vanilla launcher: the name makes Intel drivers apply their Minecraft profile.
+			vmArgs "-Xmx${project.findProperty('benchXmx') ?: '4096M'}", '-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump'
+			// Extra JVM flags to compare, e.g. -PbenchJvm="-XX:+UseZGC -XX:+ZGenerational"
+			if (project.hasProperty('benchJvm')) {
+				vmArgs(*project.property('benchJvm').toString().split(' '))
+			}
+			if (project.hasProperty('benchJfr')) {
+				vmArg "-XX:StartFlightRecording=filename=bench-${project.findProperty('benchLabel') ?: 'run'}.jfr,settings=profile"
+			}
+		}
+	}
+}
+
+dependencies {
+	modImplementation "maven.modrinth:vulkanmod:${project.vulkanmod_version}"
+	// VulkanMod nests these jars, but in dev LWJGL sits on the system classpath, so they must too.
+	runtimeOnly "org.lwjgl:lwjgl-vulkan:3.3.3"
+	runtimeOnly "org.lwjgl:lwjgl-vma:3.3.3"
+	runtimeOnly "org.lwjgl:lwjgl-vma:3.3.3:${lwjglNatives}"
+	runtimeOnly "org.lwjgl:lwjgl-shaderc:3.3.3"
+	runtimeOnly "org.lwjgl:lwjgl-shaderc:3.3.3:${lwjglNatives}"
+
+	// Only the bench harness uses Fabric API; the mod itself does not depend on it.
+	modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	benchCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}

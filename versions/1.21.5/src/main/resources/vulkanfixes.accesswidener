@@ -1,0 +1,4 @@
+accessWidener v2 named
+
+# The uniform set vanilla's sky pipeline uses (ModelViewMat, ProjMat, ColorModulator, fog)
+accessible field net/minecraft/client/gl/RenderPipelines MATRICES_COLOR_FOG_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
