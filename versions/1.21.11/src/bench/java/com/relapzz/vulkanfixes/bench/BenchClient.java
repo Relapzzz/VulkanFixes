@@ -55,6 +55,7 @@ public final class BenchClient implements ClientModInitializer {
 	// Positions and angles in the original test world; 12522 is the sun on the horizon.
 	private static final String SUNSET_SPOT = "-277.456 72 42.426";
 	private static final String CAVE_SPOT = "-77.223 -32 67.195";
+	private static final String CEILING_SPOT = "2.3719 192.1113 6.7093";
 	private static final List<Scene> SCENES = List.of(
 		new Scene("sunset_west", 12522, SUNSET_SPOT, 89.5f, -4.4f, Motion.STILL),
 		new Scene("sunset_west_sweep", 12522, SUNSET_SPOT, 89.5f, -4.4f, Motion.SWEEP),
@@ -72,7 +73,14 @@ public final class BenchClient implements ClientModInitializer {
 		new Scene("cave_sweep", 12522, CAVE_SPOT, -75.7f, 5.7f, Motion.SWEEP),
 		new Scene("cave_spin", 12522, CAVE_SPOT, -75.7f, 5.7f, Motion.SPIN),
 		new Scene("lava", 12522, null, 0, 0, Motion.STILL),
-		new Scene("lava_spin", 12522, null, 0, 0, Motion.SPIN)
+		new Scene("lava_spin", 12522, null, 0, 0, Motion.SPIN),
+		// Iron bars under a plank ceiling in the lower quarter of a chunk section (y 192-195), seen from
+		// below. The bars' top faces sit just under the ceiling, and if they snap onto it the two z-fight.
+		new Scene("ceiling", 6000, CEILING_SPOT, -90f, -25f, Motion.STILL,
+			"fill 0 186 0 15 200 15 air",
+			"fill 0 195 0 15 195 15 oak_planks",
+			"fill 5 192 0 5 194 15 iron_bars[north=true,south=true]",
+			"fill 0 192 2 15 194 2 iron_bars[east=true,west=true]")
 	);
 
 	private static final FrameStats STATS = new FrameStats();
@@ -178,6 +186,7 @@ public final class BenchClient implements ClientModInitializer {
 		}
 
 		Scene scene = scene();
+		run(client, scene.setup);
 		run(client, "time set " + scene.time);
 		if (scene.spot != null) {
 			baseYaw = scene.yaw;
@@ -325,6 +334,6 @@ public final class BenchClient implements ClientModInitializer {
 
 	private enum Motion { STILL, SWEEP, TURN, SPIN }
 
-	private record Scene(String name, int time, String spot, float yaw, float pitch, Motion motion) {
+	private record Scene(String name, int time, String spot, float yaw, float pitch, Motion motion, String... setup) {
 	}
 }

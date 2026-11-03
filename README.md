@@ -1,6 +1,9 @@
 # VulkanFixes
 
-A small client-side Fabric mod that fixes the heavy frame drops [VulkanMod](https://modrinth.com/mod/vulkanmod) shows when you **turn the camera toward a sunrise or sunset in exclusive fullscreen**. It doesn't change how anything looks.
+A small client-side Fabric mod that fixes two things in [VulkanMod](https://modrinth.com/mod/vulkanmod), without changing how anything looks compared to vanilla:
+
+- heavy frame drops when you **turn the camera toward a sunrise or sunset in exclusive fullscreen**;
+- **flickering where iron bars touch a ceiling or floor** (z-fighting, see [below](#flickering-at-the-top-of-iron-bars)).
 
 | Turning across the sunset, 1080p fullscreen, Iris Xe, MC 1.21.11 | FPS | Avg frame | Frames over 10 ms |
 |---|---|---|---|
@@ -24,7 +27,7 @@ There's no jar for 1.21.6–1.21.8 because VulkanMod has no release for those ve
 
 You need Fabric Loader 0.15.11 or newer and Java 21. Fabric API isn't needed.
 
-Only the 1.21.11 jar has been tested in-game. The others were checked against each Minecraft version's code without launching the game (see [Checking a jar against Minecraft versions](#checking-a-jar-against-minecraft-versions)). If the fix fails at runtime on one of them, it logs an error once and falls back to vanilla behavior instead of crashing.
+Only the 1.21.11 jar has been tested in-game. The others were checked against each Minecraft version's code without launching the game (see [Checking a jar against Minecraft versions](#checking-a-jar-against-minecraft-versions)). If the sunset fix fails at runtime on one of them, it logs an error once and falls back to vanilla behavior instead of crashing.
 
 ## What it fixes
 
@@ -35,6 +38,16 @@ VulkanMod passes that color straight to `vkCmdClearAttachments`. On Intel Xe gra
 VulkanFixes clears with a color that only follows the fog after the fog has stayed the same for 20 frames. While the fog is changing, the mod paints the exact fog color over the cleared frame with one full-screen draw, before anything else is drawn. The values that end up in the framebuffer are the same ones the vanilla clear writes, so frames are pixel-identical to vanilla. On 1.21.11 this was checked by comparing screenshots against vanilla.
 
 Start the game with `-Dvulkanfixes.fogClear=false` to turn the fix off for comparison.
+
+## Flickering at the top of iron bars
+
+Iron bars placed right under a ceiling (or right on a floor) show jagged patches along the top (or bottom) that flicker as you move. The faces at the top and bottom of iron bars sit 1/16000 of a block inside the block, so that they never touch the block above or below.
+
+VulkanMod stores terrain vertex positions in steps of 1/2048 of a block and converts them by truncating. That inset is much smaller than one step, so it gets lost: in the lower quarter of each 16-block chunk section the bars' top faces snap up onto the block boundary, and elsewhere their bottom faces snap down onto it. There they lie exactly in the face of the ceiling or floor, and the two surfaces z-fight.
+
+VulkanFixes ([`FaceInset`](common/src/main/java/com/relapzz/vulkanfixes/FaceInset.java)) rounds positions to the nearest step instead, and keeps a face that vanilla puts a hair inside a block one step inside it. In a side-by-side screenshot of bars under a plank ceiling, VulkanMod with the fix matches vanilla; without it, the strip along the top of the bars is covered by the ceiling and flickers. The change is in VulkanMod's compact vertex writer, which is the same in every VulkanMod version listed above, so all jars have it.
+
+Start the game with `-Dvulkanfixes.faceInset=false` to turn the fix off for comparison.
 
 ## Motion blur (experimental, 1.21.11 only)
 
@@ -73,7 +86,7 @@ Each subproject has:
 - `mixin/`, the clear hooks;
 - `vulkanfixes.accesswidener`, for the few vanilla internals the fill needs.
 
-Code shared by every version is in `common/`. That's [`SteadyClearColor`](common/src/main/java/com/relapzz/vulkanfixes/SteadyClearColor.java), which decides the clear color and handles the fall-back, plus `fabric.mod.json`. The root `build.gradle` holds the build setup the subprojects share.
+Code shared by every version is in `common/`. That's [`SteadyClearColor`](common/src/main/java/com/relapzz/vulkanfixes/SteadyClearColor.java), which decides the clear color and handles the fall-back; [`FaceInset`](common/src/main/java/com/relapzz/vulkanfixes/FaceInset.java) and its mixin into VulkanMod's vertex writer (`vulkanfixes.common.mixins.json`); and `fabric.mod.json`. The root `build.gradle` holds the build setup the subprojects share.
 
 ## Building
 
@@ -136,7 +149,8 @@ Every jar in 1.1.0 passed this check for each Minecraft version in its range.
 - Put a singleplayer world at `run/saves/bench`, and any mods you want to test alongside in `run/mods`. The scene positions in `BenchClient` belong to the original test world, so edit `SUNSET_SPOT` and `CAVE_SPOT` for yours.
 - `-PbenchFullscreen` uses exclusive fullscreen, which is the only mode where the sunset stall shows up.
 - `-PbenchRealistic` plays in creative with F3 open. Without it the bench uses a bare spectator camera.
-- `-PbenchNoFix` turns the fix off. `-PbenchAlwaysFill` forces the fill draw on every frame for screenshot comparisons.
+- `-PbenchNoFix` turns the fog clear fix off. `-PbenchAlwaysFill` forces the fill draw on every frame for screenshot comparisons.
+- `-PbenchNoInset` turns the iron bars fix off. The `ceiling` scene builds bars under a plank ceiling near 0, 192, 0 and screenshots them from below; compare it with and without the flag.
 - `-PbenchMotionShotMs=1300` also takes a screenshot that long into each scene's measurement, while the camera moves, to look at motion blur. It stalls one frame, so leave it off when the numbers matter. Motion blur follows `run/config/vulkanfixes.json`.
 - Put [Mod Menu](https://modrinth.com/mod/modmenu) in `run/mods` to open the config screen in dev runs.
 - `-PbenchJvm="-XX:+UseZGC -XX:+ZGenerational"`, `-PbenchXmx=3072M` and `-PbenchJfr` set JVM flags, heap size, and a JFR recording.

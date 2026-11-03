@@ -40,6 +40,8 @@ loom {
 			property 'vulkanfixes.bench.motionShotMs', (project.findProperty('benchMotionShotMs') ?: '0').toString()
 			// Turns the fog clear fix off, to measure against vanilla behavior.
 			property 'vulkanfixes.fogClear', (!project.hasProperty('benchNoFix')).toString()
+			// Packs terrain positions the way VulkanMod does, to compare faces that touch a neighbouring block.
+			property 'vulkanfixes.faceInset', (!project.hasProperty('benchNoInset')).toString()
 			if (project.hasProperty('benchAlwaysFill')) {
 				property 'vulkanfixes.fogClear.settleFrames', '2147483647'
 			}
