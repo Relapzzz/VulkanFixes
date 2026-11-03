@@ -2,5 +2,9 @@
 	"vulkanfixes.config.title": "VulkanFixes",
 	"vulkanfixes.config.motionBlur": "Motion Blur (Experimental)",
 	"vulkanfixes.config.motionBlur.tooltip": "Blurs the world along the camera's movement so turning looks smoother. Doesn't delay frames, and the hand and HUD stay sharp.",
-	"vulkanfixes.config.motionBlurStrength": "Blur Strength: %s"
+	"vulkanfixes.config.motionBlurStrength": "Blur Strength: %s",
+	"vulkanfixes.config.screenshotToClipboard": "Copy Screenshots to Clipboard",
+	"vulkanfixes.config.screenshotToClipboard.tooltip": "Each screenshot is still saved to the screenshots folder, and also copied to the clipboard so you can paste it straight into a chat or an image editor.",
+	"vulkanfixes.screenshot.copied": "(copied to clipboard)",
+	"vulkanfixes.screenshot.copyFailed": "(couldn't copy it to the clipboard)"
 }

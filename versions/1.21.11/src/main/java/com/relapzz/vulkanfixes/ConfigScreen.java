@@ -33,6 +33,10 @@ public final class ConfigScreen extends Screen {
 			.build(x, y, WIDGET_WIDTH, 20, Text.translatable("vulkanfixes.config.motionBlur"), (button, enabled) -> this.config.motionBlur = enabled));
 		this.addDrawableChild(new StrengthSlider(x, y + 24, WIDGET_WIDTH));
 
+		this.addDrawableChild(CyclingButtonWidget.onOffBuilder(this.config.screenshotToClipboard)
+			.tooltip(enabled -> Tooltip.of(Text.translatable("vulkanfixes.config.screenshotToClipboard.tooltip")))
+			.build(x, y + 56, WIDGET_WIDTH, 20, Text.translatable("vulkanfixes.config.screenshotToClipboard"), (button, enabled) -> this.config.screenshotToClipboard = enabled));
+
 		this.addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> this.close())
 			.dimensions(x, this.height - 28, WIDGET_WIDTH, 20)
 			.build());

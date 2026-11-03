@@ -29,6 +29,8 @@ public final class VulkanFixesConfig {
 	public boolean motionBlur = false;
 	/** 1 blurs each frame across the camera motion of half a monitor refresh, 2 across a whole one. */
 	public float motionBlurStrength = 1.0f;
+	/** Also copy each screenshot to the system clipboard, see {@link ScreenshotClipboard}. */
+	public boolean screenshotToClipboard = true;
 
 	public static VulkanFixesConfig get() {
 		if (instance == null) {

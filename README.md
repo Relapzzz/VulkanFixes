@@ -80,6 +80,12 @@ An optional camera motion blur that works under VulkanMod. It's off by default. 
 
 How it works: after the world is drawn, [`MotionBlur`](versions/1.21.11/src/main/java/com/relapzz/vulkanfixes/MotionBlur.java) works out from last frame's camera rotation where each pixel was on screen, and [`motion_blur.fsh`](versions/1.21.11/src/main/resources/assets/vulkanfixes/shaders/core/motion_blur.fsh) averages along that line at half resolution. [`motion_blur_composite.fsh`](versions/1.21.11/src/main/resources/assets/vulkanfixes/shaders/core/motion_blur_composite.fsh) then blends the result over the sharp frame wherever pixels moved at least a pixel. Under VulkanMod the world is drawn straight into the swapchain image, which can't be read and drawn into in the same pass, hence the two passes.
 
+## Screenshots to clipboard (1.21.11 only)
+
+Each screenshot (F2) is still saved to the `screenshots` folder as usual, and is also copied to the clipboard, so you can paste it straight into a chat or an image editor. The "Saved screenshot as …" message ends with *(copied to clipboard)* when it worked. It's on by default; turn it off in Mod Menu → VulkanFixes → **Copy Screenshots to Clipboard**, or set `screenshotToClipboard` to `false` in `config/vulkanfixes.json`.
+
+[`ScreenshotClipboard`](versions/1.21.11/src/main/java/com/relapzz/vulkanfixes/ScreenshotClipboard.java) reads the saved PNG back on Minecraft's IO thread, so taking a screenshot doesn't hitch. On Windows and Linux it uses Java's clipboard; on macOS it hands the file to `osascript`. Only Windows has been tested.
+
 ## Project layout
 
 Minecraft's rendering API changed several times during 1.21, so each range of versions has its own small subproject in `versions/`, named after the Minecraft version it compiles against:
