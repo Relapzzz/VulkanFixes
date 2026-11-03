@@ -1,9 +1,10 @@
 # VulkanFixes
 
-A small client-side Fabric mod that fixes two things in [VulkanMod](https://modrinth.com/mod/vulkanmod), without changing how anything looks compared to vanilla:
+A small client-side Fabric mod that fixes three things in [VulkanMod](https://modrinth.com/mod/vulkanmod), without changing how anything looks compared to vanilla:
 
 - heavy frame drops when you **turn the camera toward a sunrise or sunset in exclusive fullscreen**;
-- **flickering where iron bars touch a ceiling or floor** (z-fighting, see [below](#flickering-at-the-top-of-iron-bars)).
+- **flickering where iron bars touch a ceiling or floor** (z-fighting, see [below](#flickering-at-the-top-of-iron-bars));
+- **server resource packs that draw their HUD with custom shaders** showing text bunched up on the action bar line and missing panels (1.21.11 only, see [below](#server-hud-from-resource-pack-shaders)).
 
 | Turning across the sunset, 1080p fullscreen, Iris Xe, MC 1.21.11 | FPS | Avg frame | Frames over 10 ms |
 |---|---|---|---|
@@ -49,6 +50,18 @@ VulkanFixes ([`FaceInset`](common/src/main/java/com/relapzz/vulkanfixes/FaceInse
 
 Start the game with `-Dvulkanfixes.faceInset=false` to turn the fix off for comparison.
 
+## Server HUD from resource pack shaders
+
+Some servers (Hoplite, for one) send a resource pack that replaces Minecraft's text shader. Text in reserved colours is moved out of the action bar into screen corners, panels and bands at the top and bottom of the screen. Under VulkanMod all of it stayed on the action bar line, overlapping, and the panels were missing.
+
+VulkanMod remembers the source of each shader the first time a pipeline needs it. When resource packs change, Minecraft compiles every pipeline again from the new packs, but VulkanMod hands it the remembered source. A server's pack always arrives after startup, so its shaders were never used. VulkanFixes ([`VkGpuDeviceMixin`](versions/1.21.11/src/main/java/com/relapzz/vulkanfixes/mixin/VkGpuDeviceMixin.java)) clears those sources whenever Minecraft clears its pipelines, so a reload reads the packs that are loaded now.
+
+VulkanMod also ships its own copy of the item entity vertex shader, which declares UV1 as integers, the type the vertex data actually holds. When a pack replaces that shader, the pack's copy is used, with the same correction. Without this, a pack that changes both halves of that shader fails to compile and the game drops every server pack.
+
+In the bench, loading Hoplite's packs mid-session and showing an action bar in its marker colours draws the top and bottom bands with their text in place; without the fix, everything stays on the action bar line. This fix is only in the 1.21.11 jar. VulkanMod for 1.21.5 and 1.21.9–1.21.10 caches shader sources the same way but loads them differently, and those weren't tested.
+
+Start the game with `-Dvulkanfixes.packShaders=false` to turn the fix off for comparison.
+
 ## Motion blur (experimental, 1.21.11 only)
 
 An optional camera motion blur that works under VulkanMod. It's off by default. Turn it on in [Mod Menu](https://modrinth.com/mod/modmenu) → VulkanFixes → **Motion Blur (Experimental)**. The setting is saved in `config/vulkanfixes.json`. Mod Menu is optional; without it, edit that file.
@@ -86,7 +99,7 @@ Each subproject has:
 - `mixin/`, the clear hooks;
 - `vulkanfixes.accesswidener`, for the few vanilla internals the fill needs.
 
-Code shared by every version is in `common/`. That's [`SteadyClearColor`](common/src/main/java/com/relapzz/vulkanfixes/SteadyClearColor.java), which decides the clear color and handles the fall-back; [`FaceInset`](common/src/main/java/com/relapzz/vulkanfixes/FaceInset.java) and its mixin into VulkanMod's vertex writer (`vulkanfixes.common.mixins.json`); and `fabric.mod.json`. The root `build.gradle` holds the build setup the subprojects share.
+Code shared by every version is in `common/`. That's [`SteadyClearColor`](common/src/main/java/com/relapzz/vulkanfixes/SteadyClearColor.java), which decides the clear color and handles the fall-back; [`FaceInset`](common/src/main/java/com/relapzz/vulkanfixes/FaceInset.java) and its mixin into VulkanMod's vertex writer (`vulkanfixes.common.mixins.json`); and `fabric.mod.json`. The resource pack shader fix is 1.21.11 only, in that subproject's `mixin/`. The root `build.gradle` holds the build setup the subprojects share.
 
 ## Building
 
@@ -151,6 +164,7 @@ Every jar in 1.1.0 passed this check for each Minecraft version in its range.
 - `-PbenchRealistic` plays in creative with F3 open. Without it the bench uses a bare spectator camera.
 - `-PbenchNoFix` turns the fog clear fix off. `-PbenchAlwaysFill` forces the fill draw on every frame for screenshot comparisons.
 - `-PbenchNoInset` turns the iron bars fix off. The `ceiling` scene builds bars under a plank ceiling near 0, 192, 0 and screenshots them from below; compare it with and without the flag.
+- `-PbenchNoPackShaders` turns the resource pack shader fix off. The `server_pack_hud` scene turns on the packs `hoplite1.zip` to `hoplite5.zip` in `run/resourcepacks` (lowest priority first; override with `-Dvulkanfixes.bench.serverPacks`) and shows an action bar in Hoplite's marker colours. The reload takes a while, so pass `-PbenchJvm=-Dvulkanfixes.bench.settleMs=25000`.
 - `-PbenchMotionShotMs=1300` also takes a screenshot that long into each scene's measurement, while the camera moves, to look at motion blur. It stalls one frame, so leave it off when the numbers matter. Motion blur follows `run/config/vulkanfixes.json`.
 - Put [Mod Menu](https://modrinth.com/mod/modmenu) in `run/mods` to open the config screen in dev runs.
 - `-PbenchJvm="-XX:+UseZGC -XX:+ZGenerational"`, `-PbenchXmx=3072M` and `-PbenchJfr` set JVM flags, heap size, and a JFR recording.

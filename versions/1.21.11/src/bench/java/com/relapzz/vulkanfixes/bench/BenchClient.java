@@ -18,6 +18,8 @@ import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -51,6 +53,10 @@ public final class BenchClient implements ClientModInitializer {
 	// Also takes a screenshot this long into measuring, while the camera moves, e.g. to look at motion blur.
 	// The screenshot stalls one frame, so leave it off when the numbers matter.
 	private static final long MOTION_SHOT_NS = Long.getLong("vulkanfixes.bench.motionShotMs", 0) * 1_000_000L;
+	// Resource packs in run/resourcepacks, lowest priority first, for the server_pack_hud scene. One of them
+	// replaces the text shaders; Hoplite's needs the textures in its other packs to load at all.
+	private static final List<String> SERVER_PACKS = List.of(System.getProperty("vulkanfixes.bench.serverPacks",
+		"hoplite1.zip,hoplite2.zip,hoplite3.zip,hoplite4.zip,hoplite5.zip").split(","));
 
 	// Positions and angles in the original test world; 12522 is the sun on the horizon.
 	private static final String SUNSET_SPOT = "-277.456 72 42.426";
@@ -80,7 +86,11 @@ public final class BenchClient implements ClientModInitializer {
 			"fill 0 186 0 15 200 15 air",
 			"fill 0 195 0 15 195 15 oak_planks",
 			"fill 5 192 0 5 194 15 iron_bars[north=true,south=true]",
-			"fill 0 192 2 15 194 2 iron_bars[east=true,west=true]")
+			"fill 0 192 2 15 194 2 iron_bars[east=true,west=true]"),
+		// Turns SERVER_PACKS on mid-session, the way a server's pack arrives after joining, then shows an action
+		// bar in the pack's marker colours. Its text shader moves that text into bands at the top and bottom of
+		// the screen; drawn at the action bar's spot, the game is still using the shaders it started with.
+		new Scene("server_pack_hud", 6000, CEILING_SPOT, -90f, -25f, Motion.STILL)
 	);
 
 	private static final FrameStats STATS = new FrameStats();
@@ -186,6 +196,15 @@ public final class BenchClient implements ClientModInitializer {
 		}
 
 		Scene scene = scene();
+		if (scene.name.equals("server_pack_hud")) {
+			client.getResourcePackManager().scanPacks();
+			for (String pack : SERVER_PACKS) {
+				if (!client.getResourcePackManager().enable("file/" + pack.trim())) {
+					LOGGER.warn("[bench] resource pack {} not found in run/resourcepacks", pack);
+				}
+			}
+			client.reloadResources();
+		}
 		run(client, scene.setup);
 		run(client, "time set " + scene.time);
 		if (scene.spot != null) {
@@ -210,6 +229,9 @@ public final class BenchClient implements ClientModInitializer {
 		if (player == null) {
 			return;
 		}
+		if (scene().name.equals("server_pack_hud")) {
+			client.inGameHud.setOverlayMessage(markedHud(), false);
+		}
 		float yaw = baseYaw;
 		float pitch = basePitch;
 		if (phase == Phase.MEASURE) {
@@ -232,6 +254,22 @@ public final class BenchClient implements ClientModInitializer {
 		player.lastYaw = yaw;
 		player.setPitch(pitch);
 		player.lastPitch = pitch;
+	}
+
+	/**
+	 * An action bar laid out like the Hoplite lobby's gate scene. Its colours are rgb(252, 240 + code,
+	 * 240 + palette): code 6 and 7 turn a glyph into the top and bottom bands, 0-2 and 3-5 move text into
+	 * the top and bottom band at the left, centre and right.
+	 */
+	private static Text markedHud() {
+		MutableText hud = Text.empty();
+		hud.append(Text.literal("█").withColor(0xFCF6F7));
+		hud.append(Text.literal("█").withColor(0xFCF7F7));
+		hud.append(Text.literal("REGION EU").withColor(0xFCF0F0));
+		hud.append(Text.literal("Distant Reaches").withColor(0xFCF1F0));
+		hud.append(Text.literal("17h ago").withColor(0xFCF2F0));
+		hud.append(Text.literal("Entering").withColor(0xFCF3F5));
+		return hud;
 	}
 
 	/** Finds an air block a few blocks from the nearest lava with a clear line of sight to it. */
