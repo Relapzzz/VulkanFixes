@@ -84,7 +84,7 @@ How it works: after the world is drawn, [`MotionBlur`](versions/1.21.11/src/main
 
 Each screenshot (F2) is still saved to the `screenshots` folder as usual, and is also copied to the clipboard, so you can paste it straight into a chat or an image editor. The "Saved screenshot as …" message ends with *(copied to clipboard)* when it worked. It's on by default; turn it off in Mod Menu → VulkanFixes → **Copy Screenshots to Clipboard**, or set `screenshotToClipboard` to `false` in `config/vulkanfixes.json`.
 
-[`ScreenshotClipboard`](versions/1.21.11/src/main/java/com/relapzz/vulkanfixes/ScreenshotClipboard.java) reads the saved PNG back on Minecraft's IO thread, so taking a screenshot doesn't hitch. On Windows and Linux it uses Java's clipboard; on macOS it hands the file to `osascript`. Only Windows has been tested.
+[`ScreenshotClipboard`](versions/1.21.11/src/main/java/com/relapzz/vulkanfixes/ScreenshotClipboard.java) runs on Minecraft's IO thread, so taking a screenshot doesn't hitch. It doesn't use Java's clipboard: Minecraft runs Java's desktop toolkit headless, which has no clipboard, and once any mod has touched it that can't be changed. On Windows it calls the clipboard API through JNA (which Minecraft ships) and puts both the PNG and a bitmap there. On Linux it hands the file to `wl-copy` or `xclip`, and on macOS to `osascript`. Only Windows has been tested.
 
 ## Project layout
 

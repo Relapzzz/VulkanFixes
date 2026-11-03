@@ -5,6 +5,7 @@ import java.io.File;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.relapzz.vulkanfixes.ScreenshotClipboard;
 import com.relapzz.vulkanfixes.VulkanFixesConfig;
+import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -17,12 +18,13 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 @Mixin(ScreenshotRecorder.class)
 abstract class ScreenshotRecorderMixin {
 	// method_22691: the IO worker task that writes the image to the file and reports success (first accept) or failure.
+	// The image is closed only after the message is sent, so its pixels can still be read here.
 	@ModifyArg(method = "method_22691", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", ordinal = 0))
-	private static Object vulkanfixes$copyToClipboard(Object message, @Local(argsOnly = true) File file) {
+	private static Object vulkanfixes$copyToClipboard(Object message, @Local(argsOnly = true) NativeImage image, @Local(argsOnly = true) File file) {
 		if (!VulkanFixesConfig.get().screenshotToClipboard) {
 			return message;
 		}
-		String note = ScreenshotClipboard.copy(file) ? "vulkanfixes.screenshot.copied" : "vulkanfixes.screenshot.copyFailed";
+		String note = ScreenshotClipboard.copy(image, file) ?"vulkanfixes.screenshot.copied" : "vulkanfixes.screenshot.copyFailed";
 		return Text.empty().append((Text)message).append(" ").append(Text.translatable(note).formatted(Formatting.GRAY));
 	}
 }
